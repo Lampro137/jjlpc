@@ -112,72 +112,65 @@
     <!-- 引入JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // 服务器地址
-        const API_BASE_URL = 'http://127.0.0.1:5000/api';
-
         // 初始化词云图
         function initWordCloud() {
             const wordcloudChart = echarts.init(document.getElementById('wordcloud-chart'));
             
-            // 加载词频数据
-            fetch(`${API_BASE_URL}/word-frequency`)
+            // 直接加载本地词频数据文件
+            fetch('word_freq_data.json')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.status === 'success') {
-                        const wordList = data.data.map(item => ({
-                            name: item.word,
-                            value: item.freq
-                        }));
+                    const wordList = data.slice(0, 100).map(item => ({
+                        name: item.word,
+                        value: item.freq
+                    }));
 
-                        const option = {
-                            title: {
-                                text: '弹幕高频词TOP100',
-                                left: 'center'
+                    const option = {
+                        title: {
+                            text: '弹幕高频词TOP100',
+                            left: 'center'
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{a} <br/>{b}: {c}'
+                        },
+                        series: [{
+                            name: '弹幕高频词',
+                            type: 'wordCloud',
+                            shape: 'circle',
+                            left: 'center',
+                            top: 'center',
+                            width: '90%',
+                            height: '90%',
+                            right: null,
+                            bottom: null,
+                            sizeRange: [12, 60],
+                            rotationRange: [-45, 45],
+                            rotationStep: 15,
+                            gridSize: 8,
+                            drawOutOfBound: false,
+                            textStyle: {
+                                fontFamily: 'Microsoft YaHei, sans-serif',
+                                fontWeight: 'normal',
+                                color: function () {
+                                    return 'rgb(' + [
+                                        Math.round(Math.random() * 100 + 50),
+                                        Math.round(Math.random() * 100 + 50),
+                                        Math.round(Math.random() * 200 + 55)
+                                    ].join(',') + ')';
+                                }
                             },
-                            tooltip: {
-                                trigger: 'item',
-                                formatter: '{a} <br/>{b}: {c}'
-                            },
-                            series: [{
-                                name: '弹幕高频词',
-                                type: 'wordCloud',
-                                shape: 'circle',
-                                left: 'center',
-                                top: 'center',
-                                width: '90%',
-                                height: '90%',
-                                right: null,
-                                bottom: null,
-                                sizeRange: [12, 60],
-                                rotationRange: [-45, 45],
-                                rotationStep: 15,
-                                gridSize: 8,
-                                drawOutOfBound: false,
+                            emphasis: {
                                 textStyle: {
-                                    fontFamily: 'Microsoft YaHei, sans-serif',
-                                    fontWeight: 'normal',
-                                    color: function () {
-                                        return 'rgb(' + [
-                                            Math.round(Math.random() * 100 + 50),
-                                            Math.round(Math.random() * 100 + 50),
-                                            Math.round(Math.random() * 200 + 55)
-                                        ].join(',') + ')';
-                                    }
-                                },
-                                emphasis: {
-                                    textStyle: {
-                                        shadowBlur: 10,
-                                        shadowColor: '#333'
-                                    }
-                                },
-                                data: wordList
-                            }]
-                        };
+                                    shadowBlur: 10,
+                                    shadowColor: '#333'
+                                }
+                            },
+                            data: wordList
+                        }]
+                    };
 
-                        wordcloudChart.setOption(option);
-                    } else {
-                        showAlert('获取词频数据失败', 'danger');
-                    }
+                    wordcloudChart.setOption(option);
                 })
                 .catch(error => {
                     console.error('加载词频数据出错:', error);
@@ -194,71 +187,66 @@
         function initSentimentChart() {
             const sentimentChart = echarts.init(document.getElementById('sentiment-chart'));
 
-            // 加载情感分析数据
-            fetch(`${API_BASE_URL}/sentiment-data`)
+            // 直接加载本地情感分析数据文件
+            fetch('sentiment_data.json')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.status === 'success') {
-                        const sentimentData = data.data;
-                        const distribution = sentimentData.sentiment_distribution;
-                        
-                        // 准备数据
-                        const sentimentTypes = Object.keys(distribution);
-                        const values = Object.values(distribution).map(v => v * 100); // 转换为百分比
-                        const colors = ['#52c41a', '#ff7875', '#faad14']; // 正面-绿色，负面-红色，中性-黄色
+                    const distribution = data.sentiment_distribution;
+                    
+                    // 准备数据
+                    const sentimentTypes = Object.keys(distribution);
+                    const values = Object.values(distribution).map(v => v * 100); // 转换为百分比
+                    const colors = ['#52c41a', '#ff7875', '#faad14']; // 正面-绿色，负面-红色，中性-黄色
 
-                        const option = {
-                            title: {
-                                text: `弹幕情感分布 (总计: ${sentimentData.total_danmu}条)`,
-                                left: 'center'
+                    const option = {
+                        title: {
+                            text: `弹幕情感分布 (总计: ${data.total_danmu}条)`,
+                            left: 'center'
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{a} <br/>{b}: {c}% ({d}%)'
+                        },
+                        legend: {
+                            orient: 'horizontal',
+                            bottom: 10,
+                            data: sentimentTypes
+                        },
+                        series: [{
+                            name: '情感类型',
+                            type: 'pie',
+                            radius: ['40%', '70%'],
+                            avoidLabelOverlap: false,
+                            itemStyle: {
+                                borderRadius: 10,
+                                borderColor: '#fff',
+                                borderWidth: 2
                             },
-                            tooltip: {
-                                trigger: 'item',
-                                formatter: '{a} <br/>{b}: {c}% ({d}%)'
+                            label: {
+                                show: true,
+                                formatter: '{b}\n{c}%'
                             },
-                            legend: {
-                                orient: 'horizontal',
-                                bottom: 10,
-                                data: sentimentTypes
-                            },
-                            series: [{
-                                name: '情感类型',
-                                type: 'pie',
-                                radius: ['40%', '70%'],
-                                avoidLabelOverlap: false,
-                                itemStyle: {
-                                    borderRadius: 10,
-                                    borderColor: '#fff',
-                                    borderWidth: 2
-                                },
+                            emphasis: {
                                 label: {
                                     show: true,
-                                    formatter: '{b}\n{c}%'
-                                },
-                                emphasis: {
-                                    label: {
-                                        show: true,
-                                        fontSize: '18',
-                                        fontWeight: 'bold'
-                                    }
-                                },
-                                labelLine: {
-                                    show: true
-                                },
-                                data: sentimentTypes.map((type, index) => ({
-                                    value: values[index].toFixed(1),
-                                    name: type,
-                                    itemStyle: {
-                                        color: colors[index]
-                                    }
-                                }))
-                            }]
-                        };
+                                    fontSize: '18',
+                                    fontWeight: 'bold'
+                                }
+                            },
+                            labelLine: {
+                                show: true
+                            },
+                            data: sentimentTypes.map((type, index) => ({
+                                value: values[index].toFixed(1),
+                                name: type,
+                                itemStyle: {
+                                    color: colors[index]
+                                }
+                            }))
+                        }]
+                    };
 
-                        sentimentChart.setOption(option);
-                    } else {
-                        showAlert('获取情感分析数据失败', 'danger');
-                    }
+                    sentimentChart.setOption(option);
                 })
                 .catch(error => {
                     console.error('加载情感分析数据出错:', error);
@@ -277,6 +265,18 @@
             const searchBtn = document.getElementById('search-btn');
             const searchResults = document.getElementById('search-results');
 
+            // 加载本地弹幕数据
+            let allDanmu = [];
+            fetch('bilibili_danmu.txt')
+                .then(response => response.text())
+                .then(text => {
+                    allDanmu = text.split('\n').filter(line => line.trim() !== '');
+                })
+                .catch(error => {
+                    console.error('加载弹幕数据出错:', error);
+                    showAlert('加载弹幕数据出错，搜索功能可能无法使用', 'warning');
+                });
+
             function performSearch() {
                 const keyword = searchInput.value.trim();
                 if (!keyword) {
@@ -287,37 +287,51 @@
                 // 清空之前的结果并显示加载提示
                 searchResults.innerHTML = '<div class="text-center text-muted py-5">正在搜索中...</div>';
 
-                // 执行搜索
-                fetch(`${API_BASE_URL}/search?keyword=${encodeURIComponent(keyword)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            if (data.data.length > 0) {
-                                let html = `<div class="alert alert-info">找到 ${data.total} 条包含关键词 "${data.keyword}" 的弹幕</div>`;
-                                html += '<div class="list-group">';
-                                
-                                data.data.forEach(item => {
-                                    html += `
-                                        <div class="list-group-item result-item">
-                                            <span class="result-index">${item.index}.</span>
-                                            <span class="result-content">${item.content}</span>
-                                        </div>
-                                    `;
-                                });
-                                
-                                html += '</div>';
-                                searchResults.innerHTML = html;
-                            } else {
-                                searchResults.innerHTML = `<div class="alert alert-secondary">未找到包含关键词 "${keyword}" 的弹幕</div>`;
-                            }
-                        } else {
-                            showAlert(data.message || '搜索失败', 'danger');
+                // 本地执行搜索
+                const results = [];
+                const regex = new RegExp(keyword, 'i');
+                
+                for (let i = 0; i < allDanmu.length; i++) {
+                    const line = allDanmu[i].trim();
+                    if (regex.test(line)) {
+                        // 解析弹幕内容
+                        let content = line;
+                        const dotPos = line.indexOf('.');
+                        if (dotPos !== -1) {
+                            content = line.slice(dotPos + 1).trim();
                         }
-                    })
-                    .catch(error => {
-                        console.error('搜索出错:', error);
-                        showAlert('搜索出错，请稍后重试', 'danger');
+                        
+                        results.push({
+                            index: i + 1,
+                            content: content
+                        });
+                        
+                        // 限制返回数量
+                        if (results.length >= 50) {
+                            break;
+                        }
+                    }
+                }
+
+                // 显示搜索结果
+                if (results.length > 0) {
+                    let html = `<div class="alert alert-info">找到 ${results.length} 条包含关键词 "${keyword}" 的弹幕</div>`;
+                    html += '<div class="list-group">';
+                    
+                    results.forEach(item => {
+                        html += `
+                            <div class="list-group-item result-item">
+                                <span class="result-index">${item.index}.</span>
+                                <span class="result-content">${item.content}</span>
+                            </div>
+                        `;
                     });
+                    
+                    html += '</div>';
+                    searchResults.innerHTML = html;
+                } else {
+                    searchResults.innerHTML = `<div class="alert alert-secondary">未找到包含关键词 "${keyword}" 的弹幕</div>`;
+                }
             }
 
             // 绑定搜索按钮点击事件
